@@ -1,0 +1,46 @@
+/**
+ * Custom ImageView which notifies the drawable when it is
+ * being displayed in UI.
+ */
+public class ImageViewExt extends ImageView {
+
+    public ImageViewExt(Context context) {
+        super(context);
+    }
+
+    public ImageViewExt(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    @Override
+    public void setImageDrawable(Drawable drawable) {
+        final Drawable formerDrawable = getDrawable();
+        super.setImageDrawable(drawable);
+        notifyImageDrawable(drawable, true);
+        notifyImageDrawable(formerDrawable, false);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        setImageDrawable(null);
+        super.onDetachedFromWindow();
+    }
+
+    /**
+     * Notifies the drawable that it's displayed state has changed.
+     *
+     * @param drawable
+     * @param isShown
+     */
+    private static void notifyImageDrawable(Drawable drawable, final boolean isShown) {
+        if (drawable instanceof BitmapDrawableExt) {
+            ((BitmapDrawableExt) drawable).setIsShown(isShown);
+        } else if (drawable instanceof LayerDrawable) {
+            LayerDrawable layerDrawable = (LayerDrawable) drawable;
+            int layerCount = layerDrawable.getNumberOfLayers();
+            for (int i = 0, j = layerCount; i < j; i++) {
+                notifyImageDrawable(layerDrawable.getDrawable(i), isShown);
+            }
+        }
+    }
+}
