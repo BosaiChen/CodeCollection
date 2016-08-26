@@ -1,0 +1,61 @@
+**
+ * Class to keeps track of whether bitmap drawable it is being displayed or
+ * cached. When the drawable is no longer needed, we will recycle it to free the memory.
+ */
+public class BitmapDrawableExt extends BitmapDrawable {
+    static final String TAG = "BitmapDrawableExt";
+
+    private int mCacheDrawableRefCount = 0;
+    private int mShownDrawableRefCount = 0;
+
+    private boolean mIsDisplayed;
+
+    public BitmapDrawableExt(Resources res, Bitmap bitmap) {
+        super(res, bitmap);
+    }
+
+    /**
+     * Notify the drawable that the displayed state has changed.
+     * @param isShown
+     *            - Whether the drawable is being shown or not
+     */
+    public void setIsShown(boolean isShown) {
+        synchronized (this) {
+            if (isShown) {
+                mShownDrawableRefCount++;
+                mIsDisplayed = true;
+            } else {
+                mShownDrawableRefCount--;
+            }
+        }
+        checkDrawableState();
+    }
+
+    /**
+     * Notify the drawable that the cache state has changed.
+     * @param isCached
+     *            - Whether the drawable is being cached or not
+     */
+    public void setIsCached(boolean isCached) {
+        synchronized (this) {
+            if (isCached) {
+                mCacheDrawableRefCount++;
+            } else {
+                mCacheDrawableRefCount--;
+            }
+        }
+        checkDrawableState();
+    }
+
+    private synchronized void checkDrawableState() {
+        if (mCacheDrawableRefCount <= 0 && mShownDrawableRefCount <= 0 && mIsDisplayed && isBitmapValid()) {
+            SymLog.d(TAG, "recycle the bitmap" + toString());
+            getBitmap().recycle();
+        }
+    }
+
+    private synchronized boolean isBitmapValid() {
+        Bitmap bitmap = getBitmap();
+        return bitmap != null && !bitmap.isRecycled();
+    }
+}
