@@ -1,0 +1,44 @@
+/**
+ * Async task to asynchronously load the installed application icon.
+ */
+class BitmapDrawableWorkerTask extends AsyncTask<AppItem, Void, BitmapDrawable> {
+    private WeakReference<ImageView> imageViewReference;
+    public String appPckName = "";
+
+    public BitmapDrawableWorkerTask(ImageView imageView) {
+        imageViewReference = new WeakReference<ImageView>(imageView);
+    }
+
+    @Override
+    protected BitmapDrawable doInBackground(AppItem... appItems) {
+        appPckName = appItems[0].appInfo.packageName;
+        Drawable drawable = null;
+        BitmapDrawable bitmapDrawable = null;
+
+        try {
+            drawable = mActivity.getPackageManager().getApplicationIcon(appPckName);
+        } catch (PackageManager.NameNotFoundException ex) {
+            SymLog.d(TAG, "Name not found" + ex.toString());
+        }
+
+        if (drawable != null && drawable instanceof BitmapDrawable) {
+            bitmapDrawable = (BitmapDrawable) drawable;
+            addBitmapToMemoryCache(appItems[0].appInfo.packageName, bitmapDrawable);
+        }
+        return bitmapDrawable;
+    }
+
+    @Override
+    protected void onPostExecute(BitmapDrawable bitmap) {
+        super.onPostExecute(bitmap);
+        if (isCancelled()) {
+            bitmap = null;
+        }
+        ImageView imageView = imageViewReference.get();
+        if (imageView != null) {
+            if (bitmap != null) {
+                imageView.setImageDrawable(bitmap);
+            }
+        }
+    }
+}
